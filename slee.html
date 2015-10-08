@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>slee</title>
+	
+</head>
+<body>
+	<img slee-src="http://static.matouapp.ymatou.com/images/recommend.png" slee-background-image="" alt="">
+	<script>
+		;(function(window){
+
+			/**
+			* 转化图片为base64
+			* @param url 
+			* @param callback {Function}
+			* @param outputFormat {String} 
+			*/
+			var convertImgToBase64 = function(url, callback, outputFormat){
+				var canvas = document.createElement('CANVAS'),
+				       ctx = canvas.getContext('2d'),
+				       img = new Image;
+				   img.crossOrigin = 'Anonymous';
+				   img.onload = function(){
+				       canvas.height = img.height;
+				       canvas.width = img.width;
+				       ctx.drawImage(img,0,0);
+				       var dataURL = canvas.toDataURL(outputFormat || 'image/png');
+				       callback.call(this, dataURL);
+				       canvas = null; 
+				   };
+				   img.src = url;
+			}
+
+			var IMG_MAX_SIZE = 1024*1024*50;//默认图片存储大小 50M
+			var IMG_KEY = 'slee_img';
+
+			var slee = {
+				getSpace:function(){
+					var history = {};
+					try{
+						history = JSON.parse(window.localStorage.getItem(IMG_KEY));
+					}catch(e){ 
+
+					}
+					return history || {};
+				},
+				setSpace:function(data){
+					try{
+						window.localStorage.setItem(IMG_KEY,JSON.stringify(data));
+					}catch(e){}
+				},
+				get:function(url){
+					return this.getSpace()[url];
+				},
+				set:function(url,data){
+					var _obj = this.getSpace();
+					_obj[url] = data;
+					this.setSpace(_obj);
+					return this;
+				}
+			}
+
+			var getUrl = function(url,callback){
+				var imgUrl = slee.get(url);
+				if(imgUrl){
+					callback && callback(imgUrl);
+				}else{
+					convertImgToBase64(url,function(data){
+						slee.set(url,data);
+						callback && callback(data);
+					});
+				}
+			}
+
+			/*getUrl('http://127.0.0.1:1026/pic.png',function(data){
+				console.log(data);
+			});*/
+
+			var render = function(){
+				var nodes = document.querySelectorAll('[slee-src]'),
+					url;
+				for (var i = 0,len = nodes.length; i < len; i++) {
+					(function(inx){
+						getUrl(nodes[i].getAttribute('slee-src'),function(data){
+							nodes[inx].src= data 
+						});
+					})(i)
+				};
+			}
+
+			render()
+		})(window);
+	</script>
+</body>
+</html>
